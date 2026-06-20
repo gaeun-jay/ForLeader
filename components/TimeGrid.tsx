@@ -13,7 +13,7 @@ type Props = {
   onChange: (slots: string[]) => void;
 };
 
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 4;
 
 export default function TimeGrid({ dates, startTime, endTime, stepMinutes, selectedSlots, onChange }: Props) {
   const pending = useRef<Set<string>>(new Set(selectedSlots));
@@ -108,49 +108,47 @@ export default function TimeGrid({ dates, startTime, endTime, stepMinutes, selec
 
       {/* 그리드 */}
       <div
-        className="overflow-x-auto select-none"
+        className="flex w-full select-none"
         style={{ touchAction: "none" }}
         onPointerMove={handlePointerMove}
       >
-        <div className="inline-flex">
-          {/* 시간 라벨 */}
-          <div className="flex flex-col pt-8">
-            {timeLabels.map((t, i) => (
-              <div
-                key={t}
-                className="h-7 flex items-center justify-end pr-2 text-xs text-gray-400 w-12 shrink-0"
-              >
-                {i % 2 === 0 ? t : ""}
-              </div>
-            ))}
-          </div>
-
-          {/* 날짜 컬럼 */}
-          {visibleDates.map((date) => {
-            const slots = generateSlots(date, startTime, endTime, stepMinutes);
-            const [, month, day] = date.split("-").map(Number);
-
-            return (
-              <div key={date} className="flex flex-col">
-                <div className="h-8 flex items-center justify-center text-xs font-semibold text-gray-700 px-1 border-b border-gray-200 w-16 shrink-0">
-                  {month}/{day}
-                </div>
-                {slots.map((slotKey) => (
-                  <div
-                    key={slotKey}
-                    data-slot={slotKey}
-                    className={`h-7 w-16 shrink-0 border-b border-r border-gray-200 cursor-pointer transition-colors duration-75 ${
-                      selectedSet.has(slotKey)
-                        ? "bg-black"
-                        : "bg-white hover:bg-gray-100"
-                    }`}
-                    onPointerDown={(e) => handlePointerDown(e, slotKey)}
-                  />
-                ))}
-              </div>
-            );
-          })}
+        {/* 시간 라벨 */}
+        <div className="flex flex-col pt-8 shrink-0">
+          {timeLabels.map((t, i) => (
+            <div
+              key={t}
+              className="h-7 flex items-center justify-end pr-2 text-xs text-gray-400 w-10"
+            >
+              {i % 2 === 0 ? t : ""}
+            </div>
+          ))}
         </div>
+
+        {/* 날짜 컬럼 */}
+        {visibleDates.map((date) => {
+          const slots = generateSlots(date, startTime, endTime, stepMinutes);
+          const [, month, day] = date.split("-").map(Number);
+
+          return (
+            <div key={date} className="flex flex-col flex-1 min-w-0">
+              <div className="h-8 flex items-center justify-center text-xs font-semibold text-gray-700 border-b border-gray-200">
+                {month}/{day}
+              </div>
+              {slots.map((slotKey) => (
+                <div
+                  key={slotKey}
+                  data-slot={slotKey}
+                  className={`h-7 border-b border-r border-gray-200 cursor-pointer transition-colors duration-75 ${
+                    selectedSet.has(slotKey)
+                      ? "bg-black"
+                      : "bg-white hover:bg-gray-100"
+                  }`}
+                  onPointerDown={(e) => handlePointerDown(e, slotKey)}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
