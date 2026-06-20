@@ -146,7 +146,7 @@ export default function MeetingForm({ onCreated }: Props) {
           </div>
 
           {/* 날짜 셀 */}
-          <div className="grid grid-cols-7 gap-y-0.5">
+          <div className="grid grid-cols-7 gap-1">
             {cells.map((day, i) => {
               if (!day) return <div key={i} />;
               const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -156,7 +156,7 @@ export default function MeetingForm({ onCreated }: Props) {
                   key={i}
                   type="button"
                   onClick={() => toggleDay(day)}
-                  className={`h-8 w-full text-xs rounded-lg transition-colors font-medium ${
+                  className={`h-7 w-7 mx-auto text-xs rounded-md transition-colors font-medium ${
                     selected
                       ? "bg-black text-white"
                       : "hover:bg-gray-200 text-gray-700"
