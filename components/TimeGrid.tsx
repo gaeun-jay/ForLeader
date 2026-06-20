@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { generateSlots, timeToMinutes, minutesToTime } from "@/lib/ranking";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
   dates: string[];
@@ -12,17 +13,26 @@ type Props = {
   onChange: (slots: string[]) => void;
 };
 
+const PAGE_SIZE = 3;
+
 export default function TimeGrid({ dates, startTime, endTime, stepMinutes, selectedSlots, onChange }: Props) {
   const pending = useRef<Set<string>>(new Set(selectedSlots));
   const isDragging = useRef(false);
-  const addMode = useRef(true); // true = 추가, false = 제거
+  const addMode = useRef(true);
+  const [page, setPage] = useState(0);
 
-  // prop이 바뀔 때(기존 응답 로드 등) ref 동기화
+  const totalPages = Math.ceil(dates.length / PAGE_SIZE);
+  const visibleDates = dates.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
   useEffect(() => {
     pending.current = new Set(selectedSlots);
   }, [selectedSlots]);
 
-  // 시간 라벨 생성
+  // 날짜가 바뀌면 첫 페이지로
+  useEffect(() => {
+    setPage(0);
+  }, [dates]);
+
   const timeLabels: string[] = [];
   let cur = timeToMinutes(startTime);
   const end = timeToMinutes(endTime);
@@ -45,13 +55,11 @@ export default function TimeGrid({ dates, startTime, endTime, stepMinutes, selec
   function handlePointerDown(e: React.PointerEvent, slotKey: string) {
     e.preventDefault();
     isDragging.current = true;
-    pending.current = new Set(selectedSlots); // 현재 상태에서 시작
+    pending.current = new Set(selectedSlots);
     addMode.current = !pending.current.has(slotKey);
     toggleSlot(slotKey);
   }
 
-  // 컨테이너 전체에서 pointermove를 잡고 elementFromPoint로 셀 찾기
-  // → setPointerCapture 없이 마우스/터치 드래그 모두 동작
   function handlePointerMove(e: React.PointerEvent) {
     if (!isDragging.current) return;
     e.preventDefault();
@@ -72,49 +80,77 @@ export default function TimeGrid({ dates, startTime, endTime, stepMinutes, selec
   const selectedSet = new Set(selectedSlots);
 
   return (
-    <div
-      className="overflow-x-auto select-none"
-      style={{ touchAction: "none" }}
-      onPointerMove={handlePointerMove}
-    >
-      <div className="inline-flex">
-        {/* 시간 라벨 */}
-        <div className="flex flex-col pt-8">
-          {timeLabels.map((t, i) => (
-            <div
-              key={t}
-              className="h-7 flex items-center justify-end pr-2 text-xs text-gray-400 w-12 shrink-0"
-            >
-              {i % 2 === 0 ? t : ""}
-            </div>
-          ))}
+    <div className="space-y-2">
+      {/* 페이지 네비게이션 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="p-1 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={16} className="text-gray-600" />
+          </button>
+          <span className="text-xs text-gray-400">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, dates.length)} / {dates.length}일
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page === totalPages - 1}
+            className="p-1 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={16} className="text-gray-600" />
+          </button>
         </div>
+      )}
 
-        {/* 날짜 컬럼 */}
-        {dates.map((date) => {
-          const slots = generateSlots(date, startTime, endTime, stepMinutes);
-          const [, month, day] = date.split("-").map(Number);
-
-          return (
-            <div key={date} className="flex flex-col">
-              <div className="h-8 flex items-center justify-center text-xs font-semibold text-gray-700 px-1 border-b border-gray-200 w-16 shrink-0">
-                {month}/{day}
+      {/* 그리드 */}
+      <div
+        className="overflow-x-auto select-none"
+        style={{ touchAction: "none" }}
+        onPointerMove={handlePointerMove}
+      >
+        <div className="inline-flex">
+          {/* 시간 라벨 */}
+          <div className="flex flex-col pt-8">
+            {timeLabels.map((t, i) => (
+              <div
+                key={t}
+                className="h-7 flex items-center justify-end pr-2 text-xs text-gray-400 w-12 shrink-0"
+              >
+                {i % 2 === 0 ? t : ""}
               </div>
-              {slots.map((slotKey) => (
-                <div
-                  key={slotKey}
-                  data-slot={slotKey}
-                  className={`h-7 w-16 shrink-0 border-b border-r border-gray-200 cursor-pointer transition-colors duration-75 ${
-                    selectedSet.has(slotKey)
-                      ? "bg-black"
-                      : "bg-white hover:bg-gray-100"
-                  }`}
-                  onPointerDown={(e) => handlePointerDown(e, slotKey)}
-                />
-              ))}
-            </div>
-          );
-        })}
+            ))}
+          </div>
+
+          {/* 날짜 컬럼 */}
+          {visibleDates.map((date) => {
+            const slots = generateSlots(date, startTime, endTime, stepMinutes);
+            const [, month, day] = date.split("-").map(Number);
+
+            return (
+              <div key={date} className="flex flex-col">
+                <div className="h-8 flex items-center justify-center text-xs font-semibold text-gray-700 px-1 border-b border-gray-200 w-16 shrink-0">
+                  {month}/{day}
+                </div>
+                {slots.map((slotKey) => (
+                  <div
+                    key={slotKey}
+                    data-slot={slotKey}
+                    className={`h-7 w-16 shrink-0 border-b border-r border-gray-200 cursor-pointer transition-colors duration-75 ${
+                      selectedSet.has(slotKey)
+                        ? "bg-black"
+                        : "bg-white hover:bg-gray-100"
+                    }`}
+                    onPointerDown={(e) => handlePointerDown(e, slotKey)}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
