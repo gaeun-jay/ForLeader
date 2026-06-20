@@ -2,6 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import RespondClient from "@/components/RespondClient";
 import type { Meeting } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 // Server Component: fetch meetings server-side for faster initial render
 export default async function Home() {
   const supabase = createClient(
