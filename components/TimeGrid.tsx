@@ -127,12 +127,13 @@ export default function TimeGrid({ dates, startTime, endTime, stepMinutes, selec
         {/* 날짜 컬럼 */}
         {visibleDates.map((date) => {
           const slots = generateSlots(date, startTime, endTime, stepMinutes);
-          const [, month, day] = date.split("-").map(Number);
+          const [year, month, day] = date.split("-").map(Number);
+          const DOW = ["일","월","화","수","목","금","토"][new Date(year, month - 1, day).getDay()];
 
           return (
             <div key={date} className="flex flex-col flex-1 min-w-0">
-              <div className="h-8 flex items-center justify-center text-xs font-semibold text-gray-700 border-b border-gray-200">
-                {month}/{day}
+              <div className="h-8 flex items-center justify-center border-b border-gray-200">
+                <span className="text-xs font-semibold text-gray-700">{month}/{day}({DOW})</span>
               </div>
               {slots.map((slotKey) => (
                 <div
