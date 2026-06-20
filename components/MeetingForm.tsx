@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { generateTimeOptions } from "@/lib/ranking";
-import { X } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
   onCreated: () => void;
 };
+
+const MONTH_NAMES = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+const DAY_NAMES = ["일","월","화","수","목","금","토"];
 
 export default function MeetingForm({ onCreated }: Props) {
   const [title, setTitle] = useState("");
@@ -17,18 +20,42 @@ export default function MeetingForm({ onCreated }: Props) {
   const [participantsRaw, setParticipantsRaw] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const now = new Date();
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth()); // 0-indexed
+
   const timeOptions = generateTimeOptions(0, 24 * 60, 30);
 
-  function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const date = e.target.value;
-    if (!date || dates.includes(date)) return;
-    setDates((prev) => [...prev, date].sort());
-    e.target.value = ""; // input 초기화
+  function prevMonth() {
+    if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11); }
+    else setCalMonth((m) => m - 1);
+  }
+
+  function nextMonth() {
+    if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0); }
+    else setCalMonth((m) => m + 1);
+  }
+
+  function toggleDay(day: number) {
+    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    setDates((prev) =>
+      prev.includes(dateStr)
+        ? prev.filter((d) => d !== dateStr)
+        : [...prev, dateStr].sort()
+    );
   }
 
   function removeDate(d: string) {
     setDates((prev) => prev.filter((x) => x !== d));
   }
+
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,16 +117,59 @@ export default function MeetingForm({ onCreated }: Props) {
         />
       </div>
 
-      {/* 후보 날짜 */}
+      {/* 후보 날짜 — 인라인 달력 */}
       <div>
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
           후보 날짜
         </label>
-        <input
-          type="date"
-          onChange={handleDateChange}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          {/* 월 네비게이션 */}
+          <div className="flex items-center justify-between mb-2">
+            <button type="button" onClick={prevMonth} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+              <ChevronLeft size={14} className="text-gray-600" />
+            </button>
+            <span className="text-xs font-semibold text-gray-700">
+              {calYear}년 {MONTH_NAMES[calMonth]}
+            </span>
+            <button type="button" onClick={nextMonth} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+              <ChevronRight size={14} className="text-gray-600" />
+            </button>
+          </div>
+
+          {/* 요일 헤더 */}
+          <div className="grid grid-cols-7 mb-1">
+            {DAY_NAMES.map((d) => (
+              <div key={d} className="text-center text-xs text-gray-400 py-1">
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* 날짜 셀 */}
+          <div className="grid grid-cols-7 gap-y-0.5">
+            {cells.map((day, i) => {
+              if (!day) return <div key={i} />;
+              const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+              const selected = dates.includes(dateStr);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => toggleDay(day)}
+                  className={`h-8 w-full text-xs rounded-lg transition-colors font-medium ${
+                    selected
+                      ? "bg-black text-white"
+                      : "hover:bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 선택된 날짜 chip */}
         {dates.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {dates.map((d) => {
@@ -161,7 +231,7 @@ export default function MeetingForm({ onCreated }: Props) {
         <textarea
           value={participantsRaw}
           onChange={(e) => setParticipantsRaw(e.target.value)}
-          placeholder={"철수\n영희\n민수"}
+          placeholder={"Gaeun\nOlivia\nJames"}
           rows={4}
           className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
         />
