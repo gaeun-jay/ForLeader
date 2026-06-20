@@ -30,6 +30,7 @@ export default function RespondClient({ meetings }: Props) {
       setSelectedSlots([]);
       setNote("");
       setSubmitted(false);
+      setForceShowForm(false);
       return;
     }
 
@@ -65,8 +66,11 @@ export default function RespondClient({ meetings }: Props) {
     setSubmitted(false);
   }, [selectedName, responses]);
 
+  const [forceShowForm, setForceShowForm] = useState(false);
+
   const respondedNames = new Set(responses.map((r) => r.name));
   const allResponded = meeting ? respondedNames.size >= meeting.participants.length : false;
+  const showForm = !allResponded || forceShowForm;
   const ranking = meeting ? calculateRanking(responses, meeting) : [];
 
   async function handleSubmit(e: React.FormEvent) {
@@ -142,8 +146,8 @@ export default function RespondClient({ meetings }: Props) {
 
         {meeting && (
           <>
-            {/* 응답 폼 — 전원 완료 시 숨김 */}
-            {!allResponded && (
+            {/* 응답 폼 — 전원 완료 후 수정 시에도 표시 */}
+            {showForm && (
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* 이름 선택 */}
                 <div>
@@ -231,9 +235,16 @@ export default function RespondClient({ meetings }: Props) {
             )}
 
             {/* 전원 완료 배너 */}
-            {allResponded && (
-              <div className="bg-black text-white rounded-xl px-4 py-3 text-sm font-semibold text-center">
-                전원 응답 완료
+            {allResponded && !forceShowForm && (
+              <div className="bg-black text-white rounded-xl px-4 py-3 text-sm font-semibold text-center flex items-center justify-between">
+                <span>전원 응답 완료</span>
+                <button
+                  type="button"
+                  onClick={() => setForceShowForm(true)}
+                  className="text-xs font-normal text-gray-300 hover:text-white underline underline-offset-2 transition-colors"
+                >
+                  수정하기
+                </button>
               </div>
             )}
 
